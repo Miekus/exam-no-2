@@ -1,0 +1,131 @@
+pipeline{
+    agent any
+        options {
+        gitLabConnection("jenkins") 
+    }
+    stages {
+        //////// CALCULATING VERSION NUMBER FOR RELEASE
+        stage ("CalculateVersion"){
+            when { branch 'release/*' }
+            steps{
+                script{
+                    sh 'echo CALCULATE VERSION STAGE' 
+                    majorMinor = env.BRANCH_NAME.split("/")[1]
+                    echo "${majorMinor}" 
+                    versionNumber = sh(script: "echo ${majorMinor}.\$(git rev-list origin/release/${majorMinor} --count)", returnStdout: true).trim()
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh "mvn versions:set --settings $MAVEN_SETTINGS_XML -DnewVersion=${versionNumber}"
+                    } 
+                }
+            }
+        }
+        //////// GETING COMIT MSG
+        stage('get_commit_msg') {
+            when {expression{env.BRANCH_NAME =~ /(.*)feature\/(.*)/}}
+            steps {
+                script {
+                    env.GIT_COMMIT_MSG = sh (script: 'git log -1 --pretty=%B ${GIT_COMMIT}', returnStdout: true).trim()
+                }
+            }
+        }   
+        stage ("MavenCompile"){
+            steps{
+                script{
+                    sh 'echo MAVEN COMPILE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML compile' 
+                    } 
+                }
+            }
+        }
+        stage ("MavenTests"){
+            when {expression{env.BRANCH_NAME !=~ /(.*)release\/(.*)/} }
+            steps{
+                script{
+                    sh 'echo MAVEN TEST STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML test' 
+                    } 
+                }
+            }
+        }
+        stage ("MavenPackage"){
+            steps{
+                script{
+                    sh 'echo MAVEN PACKAGE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML package' 
+                    } 
+                }
+            }
+        }
+        stage ("E2E test ONLY Feathure/Main"){
+            when { 
+                anyOf {
+                    branch "main"
+                    allOf{
+                        expression{env.BRANCH_NAME =~ /(.*)feature\/(.*)/}
+                        expression{env.GIT_COMMIT_MSG =~ /(.*)#e2e(.*)/} 
+                    }
+                }
+            }
+            steps{
+                script
+                { 
+                    sh 'echo E2E TESTS STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn -s $MAVEN_SETTINGS_XML dependency:get -Dartifact=com.lidar:telemetry:99-SNAPSHOT:jar -Ddest=testing/telemetry.jar"
+                    sh "mvn -s $MAVEN_SETTINGS_XML dependency:get -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=testing/simulator.jar"
+                    }
+                    sh 'cp target/analytics-99-SNAPSHOT.jar testing/analytics.jar'
+                    sh 'java -cp "testing/telemetry.jar:testing/analytics.jar:testing/simulator.jar" com.lidar.simulation.Simulator'
+                }
+            }
+        }
+        stage ("E2E test"){
+           when { branch "release/*" }
+            steps{
+                script
+                { 
+                    sh 'echo E2E TESTS STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn -s $MAVEN_SETTINGS_XML dependency:get -Dartifact=com.lidar:telemetry:${majorMinor}.latest:jar -Ddest=testing/telemetry.jar"
+                    sh "mvn -s $MAVEN_SETTINGS_XML dependency:get -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=testing/simulator.jar"
+                    }
+                    sh "cp target/analytics-${versionNumber}.jar testing/analytics.jar"
+                    sh 'java -cp "testing/telemetry.jar:testing/analytics.jar:testing/simulator.jar" com.lidar.simulation.Simulator'
+                    
+                }
+            }
+        }
+
+        stage ("Publish")
+        {
+            when {branch 'main'}
+            steps
+            {
+                sh 'echo PUBLISH STAGE'
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh 'mvn --settings $MAVEN_SETTINGS_XML deploy -DskipTests' 
+                }
+            }
+        }
+
+        stage ("RELEASE")
+        {
+            when {branch 'release/*'}
+            steps
+            {
+                sh 'echo RELEASE STAGE'
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh 'mvn --settings $MAVEN_SETTINGS_XML deploy -DskipTests' 
+                }
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh "mvn versions:set --settings $MAVEN_SETTINGS_XML -DnewVersion=${majorMinor}.latest"
+                sh 'mvn --settings $MAVEN_SETTINGS_XML deploy -DskipTests' 
+                }
+                sh "git tag -a v${versionNumber} -m 'NEW RELEASE'"
+            }
+        }
+    }
+}

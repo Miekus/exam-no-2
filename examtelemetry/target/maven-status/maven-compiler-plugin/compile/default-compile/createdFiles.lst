@@ -1,0 +1,8 @@
+com/lidar/telemetry/devices/StringReading.class
+com/lidar/telemetry/TelemetrySuite.class
+com/lidar/telemetry/devices/KeyValReading.class
+com/lidar/telemetry/devices/NumericReading.class
+com/lidar/telemetry/devices/Accelerometer.class
+com/lidar/telemetry/devices/Speedometer.class
+com/lidar/telemetry/devices/Device.class
+com/lidar/telemetry/devices/Reading.class

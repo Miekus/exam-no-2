@@ -1,0 +1,8 @@
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/NumericReading.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/TelemetrySuite.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/Device.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/KeyValReading.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/Reading.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/Accelerometer.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/Speedometer.java
+/home/ubuntu/jenkins/exam/examtelemetry/telemetry/src/main/java/com/lidar/telemetry/devices/StringReading.java

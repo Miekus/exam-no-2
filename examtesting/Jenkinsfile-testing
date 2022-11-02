@@ -1,0 +1,52 @@
+pipeline{
+    agent any
+        options {
+        gitLabConnection("jenkins") 
+    }
+    stages {
+        stage ("MavenCompile"){
+            when { branch 'main'}
+            steps{
+                script{
+                    sh 'echo MAVEN COMPILE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML compile' 
+                    } 
+                }
+            }
+        }
+        stage ("MavenTests"){
+            when { branch 'main'}
+            steps{
+                script{
+                    sh 'echo MAVEN TEST STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML test' 
+                    } 
+                }
+            }
+        }
+        stage ("MavenPackage"){
+            when { branch 'main'}
+            steps{
+                script{
+                    sh 'echo MAVEN PACKAGE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh 'mvn --settings $MAVEN_SETTINGS_XML package' 
+                    } 
+                    }
+            }
+        }
+        stage ("Release"){
+            when { branch 'main'}
+            steps
+            {
+                sh 'echo RELEASE STAGE'
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh 'mvn --settings $MAVEN_SETTINGS_XML deploy' 
+                }
+            }
+        }
+    }
+}
+// change inside jenkins to use only main branch

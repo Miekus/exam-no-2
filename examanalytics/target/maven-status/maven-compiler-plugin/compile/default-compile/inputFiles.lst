@@ -1,0 +1,14 @@
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/ReadingParser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/NumericReading.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/parsing/UnknownDeviceException.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/KeyValParser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/DeviceParser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/parsing/Parser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/NumericParser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/WarnRange.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/Reading.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/parsing/ParseException.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/KeyValReading.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/StringParser.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/Analyzer.java
+/home/ubuntu/jenkins/exam/examanalytics/analytics/src/main/java/com/lidar/analytics/devices/StringReading.java

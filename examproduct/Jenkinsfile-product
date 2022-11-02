@@ -1,0 +1,92 @@
+pipeline{
+    agent any
+        options {
+        gitLabConnection("jenkins") 
+    }
+    stages {
+        //////// CALCULATING VERSION NUMBER FOR RELEASE
+        stage ("CalculateVersion"){
+            when { branch 'release/*' }
+            steps{
+                script{
+                    sh 'echo CALCULATE VERSION STAGE' 
+                    majorMinor = env.BRANCH_NAME.split("/")[1]
+                    echo "${majorMinor}" 
+                    versionNumber = sh(script: "echo ${majorMinor}.\$(git rev-list origin/release/${majorMinor} --count)", returnStdout: true).trim()
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh "mvn --settings $MAVEN_SETTINGS_XML versions:set -DnewVersion=${versionNumber} -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest"// -Danalytics.version=1.0.11 -Dtelemetry.version=1.0.9 "
+                        sh "mvn --settings $MAVEN_SETTINGS_XML dependency:list -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest "
+                    } 
+                }
+            }
+        }
+
+        stage ("MavenCompile"){
+            when { anyOf { branch 'master'; branch 'release/*'; branch 'feature/*' } }
+            steps{
+                script{
+                    sh 'echo MAVEN COMPILE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn --settings $MAVEN_SETTINGS_XML -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest compile " 
+                    } 
+                }
+            }
+        }
+
+        stage ("MavenTests"){
+            steps{
+                script{
+                    sh 'echo MAVEN TEST STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn --settings $MAVEN_SETTINGS_XML -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest test"
+                    }
+                }   
+            }
+        }
+
+        stage ("MavenPackage"){
+            steps{
+                script{
+                    sh 'echo MAVEN PACKAGE STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn --settings $MAVEN_SETTINGS_XML -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest package"
+                    } 
+                }
+            }
+        }
+
+        stage ("E2E test"){
+            steps{
+                script
+                { 
+                    sh 'echo E2E TESTS STAGE'
+                    configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                    sh "mvn -s $MAVEN_SETTINGS_XML dependency:get -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=testing/simulator.jar"
+                    }
+                    sh "unzip -o target/leader-product-${versionNumber}-leader-lidar.zip"
+                    sh "java -cp \"telemetry-${majorMinor}.latest.jar:analytics-${majorMinor}.latest.jar:testing/simulator.jar\" com.lidar.simulation.Simulator"
+                }
+            }
+        }
+
+        
+
+        stage ("RELEASE")
+        {
+            when {branch 'release/*'}
+            steps
+            {
+                sh 'echo RELEASE STAGE'
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh "mvn --settings $MAVEN_SETTINGS_XML -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest deploy -DskipTests" 
+                }
+                configFileProvider([configFile(fileId: 'maven-user-stg', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh "mvn  versions:set -DnewVersion=${majorMinor}.latest -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest"
+                sh "mvn --settings $MAVEN_SETTINGS_XML -Danalytics.version=${majorMinor}.latest -Dtelemetry.version=${majorMinor}.latest deploy -DskipTests" 
+                }
+                sh "git tag -a v${versionNumber} -m 'NEW RELEASE'"
+            }
+        }
+    }
+}
+// change inside jenkins to use only release branch
